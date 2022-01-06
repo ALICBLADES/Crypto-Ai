@@ -5,33 +5,21 @@ import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 import csv
 import main
-from tkinter import *
+import sys
+from PyQt6.QtWidgets import QApplication, QWidget, QMainWindow
 
 
 """
-This class will create a Frame for the 
+This class will create what will go into the app window, like the 
 """
 
-class Window(Frame):
+class Window:
     # The method attaches the frame to the Window class
-    def __init__(self, master=None):
-        # The particular frame gets attaches
-        Frame.__init__(self, master)
-        # Setting the self.master to master so it is apart of the window Frame.
-        self.master = master
-        # Setting the self.label to label that initializes the clock
-        self.label = Label(text="", fg="Red", font=("Helvetica", 9))
-        # Where the self.label will be placed on the GUI application
-        self.label.place(x=400, y=400)
-        # Call the function update clock and adds it to the Frame
-        self.update_clock()
-        # Setting the menu to attach to the GUI application
-        menu = Menu(self.master)
-        # Connecting the self.master to the menu so it works very good.
-        self.master.config(menu=menu)
-        # Self.BotButton and put it in the frame
-        self.BotButton = Button(text="Click this button to start the 'Andel' trading bot.",
-                                command=self.update_clock())
+    def __init__(self):
+        super(Window, self).__init__()
+
+        self.setWindowTitle("Crypto App")
+
 
     """
     This function will set up a clock in the GUI and updates the said clock 
@@ -51,42 +39,23 @@ class Window(Frame):
     """
 
     def FileReading(self, master=None):
-        menu = Menu(self.master)
-        # Connecting the self.master to the menu so it works very good.
-        self.master.config(menu=menu)
-        # Creates the file menu
-        fileMenu = Menu(menu)
-        # Creates the label for Item
-        fileMenu.add_command(label="Item")
-        # Creates the exit label and the command to exit the file menu
-        fileMenu.add_command(label="Exit", command=self.exitProgram)
-        # Creating the file label and the file menu
-        menu.add_cascade(label="File", menu=fileMenu)
-        # Adding the edit menu to the frame
-        editMenu = Menu(menu)
-        # Creating the undo label for the edit menu
-        editMenu.add_command(label="Undo")
-        # Creating the undo label for the edit menu
-        editMenu.add_command(label="Redo")
-        # Creating the edit label and adding the edit menu to the menu
-        menu.add_cascade(label="Edit", menu=editMenu)
+       bob = 7
 
-    # The function to exit the GUI
+
+
+
+    """
+    This function will exit the file menu 
+    """
     def exitProgram(self):
         exit()
 
 
-# Creating the GUI
-top = Tk()
+app = QApplication(sys.argv)
 
-# The dimensions of the GUI
-top.geometry('550x450+700+200')
+w = Window
 
-# The Title of the GUI
-top.wm_title("Crypto Graph")
+w.show()
 
-# Creating the Window in the GUI
-Window = top
+app.exec()
 
-# Making the GUI visible
-top.mainloop()
