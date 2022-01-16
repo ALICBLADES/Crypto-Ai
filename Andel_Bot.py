@@ -16,9 +16,13 @@ This class will create what will go into the app window, like the
 
 
 class Window(QMainWindow):
-    # The method attaches the frame to the Window class
+    # The method attaches the QMainWindow to the Window class
     def __init__(self):
         super().__init__()
+
+        Layout = Window.QVBoxLayout()
+
+        Layout.addWidget(self.GraphWindow())
 
         # Creating a label object
         self.label = QLabel()
@@ -45,26 +49,12 @@ class Window(QMainWindow):
         # Calling the flop Calculate function.
         self.FlopsCalculate()
 
-        try:
-            output = str(eval(text))[:20]
-        except ZeroDivisionError:
-            output = "inf"
-        except SyntaxError:
-            output = "nan"
-
-        timer = QTimer(self)
-
-        self.label.setText("booo")
-        self.label.move(50, 50)
-
         self.ReadingCurrent()
-
-        timer.start(1000)
 
         # Setting the window title
         self.setWindowTitle("Andel Trading Bot")
         # Setting the geometry of the window
-        self.setGeometry(500, 500, 500, 500)
+        self.setGeometry(750, 750, 750, 750)
 
         # Calling the File Reading function
         self.FileReading()
@@ -101,6 +91,13 @@ class Window(QMainWindow):
         label_time = current_time.toString('hh:mm:ss')
         self.label.setText(label_time)
 
+    """   
+    This function will create the frame that houses the graphs           
+    """
+
+    def GraphWindow(self):
+        self.GraphFrame = QFrame()
+        self.GraphFrame.resize(500, 500)
 
     """
     This function will exit the file menu in the GUI
@@ -113,8 +110,8 @@ class Window(QMainWindow):
     This function will calculate the FLOPS of this computer
     """
 
-    def FlopsCalculate(self, cpu_power):
-
+    def FlopsCalculate(self):
+        # The number of sockets of a Ryzen 5 2600 cpu
         sockets = 1
 
         """
@@ -122,25 +119,35 @@ class Window(QMainWindow):
                *(number of floating point operations per cycles)
         """
 
+        # The number of core sockets in the 2600
         core_sockets = 6
 
+        # The number of clock cycles that the 2600 can do as a base
         num_clock_cycles = 3400000
 
+        # The number of floating point operations
         num_floating_point_operations = 8
 
+        # The calculation to find the total number of FLOPS
         FLOPS_formula = (sockets * core_sockets) * (num_clock_cycles * num_floating_point_operations)
 
+        # Divides the computation by a million
         FLops_num = FLOPS_formula / 1000000
 
+        # IF Flops exceeds 100
         if FLops_num > 100:
+            # converts the Flops to a String
             converted = str(FLops_num)
+            # Adds 'Glops' to the String
             cpu_power = converted + " Glops"
-            return cpu_power
-
-        self.Flops = QLabel()
-        self.Flops.setText(cpu_power)
-
-        self.layout().addWidget(self.Flops)
+            # Setting the cpu to a QLabel
+            self.cpu_power = QLabel(cpu_power)
+            # Setting the font on the label
+            self.cpu_power.setFont(QFont("Arial", 12))
+            # Changing the location of the Cpu power label to the GUI
+            self.cpu_power.move(400, 200)
+            # Adding to the layout
+            self.layout().addWidget(self.cpu_power)
 
 
 app = QApplication([])
