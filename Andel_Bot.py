@@ -20,9 +20,10 @@ class Window(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        Layout = Window.QVBoxLayout()
-
-        Layout.addWidget(self.GraphWindow())
+        # Setting the window title
+        self.setWindowTitle("Andel Trading Bot")
+        # Setting the geometry of the window
+        self.setGeometry(750, 750, 750, 750)
 
         # Creating a label object
         self.label = QLabel()
@@ -50,11 +51,6 @@ class Window(QMainWindow):
         self.FlopsCalculate()
 
         self.ReadingCurrent()
-
-        # Setting the window title
-        self.setWindowTitle("Andel Trading Bot")
-        # Setting the geometry of the window
-        self.setGeometry(750, 750, 750, 750)
 
         # Calling the File Reading function
         self.FileReading()
@@ -96,8 +92,15 @@ class Window(QMainWindow):
     """
 
     def GraphWindow(self):
-        self.GraphFrame = QFrame()
+        self.setCentralWidget = QWidget()
+        self.GraphFrame = QFrame(self.centralWidget())
         self.GraphFrame.resize(500, 500)
+        self.tabGraph = QTabWidget()
+        self.tabGraph.resize(50, 50)
+        self.tabGraph.addTab(self.tabGraph, )
+
+
+
 
     """
     This function will exit the file menu in the GUI
