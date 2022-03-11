@@ -229,8 +229,7 @@ class InFirstTab(QWidget):
             Cpu_time_gui = ("CPU usage: " + str(cpu_time) + " %")
 
             self.Cpu_time_gui = QLabel(Cpu_time_gui)
-
-            return Cpu_time_gui
+            return self.Cpu_time_gui
 
 
 
@@ -281,24 +280,20 @@ class InFirstTab(QWidget):
         self.Sim_Layout.addWidget(self.percentage)
 
         counter = 1
-        # IF the counter is greater than 1000
-        if counter > 1000:
-            # Counter is equal to zero
-            counter = 0
-            # WHILE the counter is less than 1000
-            while counter < 1000:
-                # Starts the time
-                start_time = time.time()
-                # Print the time elapsed which is the current timer
-                print("Time Elapsed=", round(time.time() - start_time, 0), "secs", end='\n')
-                # Adding the cpu usage that over 10 percent in the layout
-                self.Sim_Layout.addWidget(self.Cpu_time_gui)
-                counter = + 1
-                # IF the layout has added the cpu time 25 or the cpu time 10
-                if self.Sim_Layout.addWidget(self.Cpu_time_gui) is True:
-                    time.sleep(1)
-                    # Remove the cpu time 25 from the layout
-                    self.Sim_Layout.removeWidget(self.Cpu_time_gui)
+        while counter <= 1000:
+            if counter > 1000:
+                counter = 1
+            # Starts the time
+            start_time = time.time()
+
+            # IF the layout has added the cpu time 25 or the cpu time 10
+            if self.Sim_Layout.addWidget(self.Cpu_Usage()) is True:
+               time.sleep(1)
+
+               # Remove the cpu time 25 from the layout
+               self.Sim_Layout.removeWidget(self.Cpu_Usage())
+
+            if self.Sim_Layout.
 
         # Adding the sim layout to the set layout, so it can be in the simulation tab
         self.setLayout(self.Sim_Layout)
