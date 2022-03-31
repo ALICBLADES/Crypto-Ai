@@ -169,6 +169,15 @@ class Window(QMainWindow):
         self.setCentralWidget(self.tabs)
 
 
+class WhileThread(QThread):
+
+    signal = pyqtSignal(QLabel)
+
+    def __init__(self, parent=None):
+        super(WhileThread, self).__init__(parent)
+
+
+
 """
 A class for the first tab which is the simulation, this tab will have a graph on the right side, taking up
 most of the tab space on the middle to left side of the tab which will have the all the simulation 
@@ -177,61 +186,52 @@ be a label that will tell the cpu usage on the bottom left hand side of the app 
 far left side there will be  
 """
 
-finished = pyqtSignal()  # give worker class a finished signal
-
 
 class InFirstTab(QWidget):
     def __init__(self):
         super().__init__()
 
-        # Progress
-        progress = pyqtSignal(int)
-
         # Calling the simulation method
         self.Simulation()
 
-        self.runFirstTab()
+        #self.thread = WhileThread()
+
+
+
+
+
+
+
+    def RunCpuUsage(self):
+
+            cpu_time = psutil.cpu_percent(interval=None)
+
+            cpuString = "".join(str(cpu_time))
+
+            self.labelCpu = QLabel(cpuString)
+
+
 
 
 
     """
-    This function will run the cpu usage continually while the gui can be run  
-    """
-
-    def runFirstTab(self):
-
-        # Thread:
-        self.thread = QThread()
-
-        self.worker = self.Cpu_Usage()
-
-        # move the thread
-        #self.worker.moveToThread(self.thread)
-
-        #self.thread.started.connect(self.worker)
-
-        self.thread.start()
-
-    """
-    This is for making the cpu usage in real time with the percentage
+    This function will run the cpu usage in a while loop so it can update it's self 
     """
 
     def Cpu_Usage(self):
-
-        # Initializing the cpu_time
         cpu_time = psutil.cpu_percent(interval=1, percpu=False)
+        for x in range(map(str(cpu_time))):
 
-        # WHILE cpu_time is not zero
-        while cpu_time != 0:
-            # Reinitialize the cpu time so that you can get an accurate read on the cpu usage
+
+        for rows in range(num_cores // NUM_COLS + 1):
+            # for cols in range(min(num_cores-rows*NUM_COLS, NUM_COLS)):
+            layout += [[GraphColumn('CPU ' + str(rows * NUM_COLS + cols), (rows, cols)) for cols in
+                        range(min(num_cores - rows * NUM_COLS, NUM_COLS))]]
+
             cpu_time = psutil.cpu_percent(interval=1, percpu=False)
-
-            Cpu_time_gui = ("CPU usage: " + str(cpu_time) + " %")
-
-            self.Cpu_time_gui = QLabel(Cpu_time_gui)
-            return self.Cpu_time_gui
-
-
+            cpuString = "".join(str(cpu_time))
+            self.cpuTime = QLabel("Cpu Usage is " + cpuString + "%")
+            return self.cpuTime
 
     """
     This method will create the simulation information, and the portfolio information, which is the 
@@ -279,21 +279,9 @@ class InFirstTab(QWidget):
         # Adding the percentage label to the form layout
         self.Sim_Layout.addWidget(self.percentage)
 
-        counter = 1
-        while counter <= 1000:
-            if counter > 1000:
-                counter = 1
-            # Starts the time
-            start_time = time.time()
+        while True:
+            self.Sim_Layout.addWidget(self.Cpu_Usage())
 
-            # IF the layout has added the cpu time 25 or the cpu time 10
-            if self.Sim_Layout.addWidget(self.Cpu_Usage()) is True:
-               time.sleep(1)
-
-               # Remove the cpu time 25 from the layout
-               self.Sim_Layout.removeWidget(self.Cpu_Usage())
-
-            if self.Sim_Layout.
 
         # Adding the sim layout to the set layout, so it can be in the simulation tab
         self.setLayout(self.Sim_Layout)
