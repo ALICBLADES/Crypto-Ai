@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import sys
-import traceback
 import coinbase
 import configparser
 import pandas
@@ -9,85 +8,21 @@ import requests
 import os
 import time
 import psutil
+from threading import Timer
+
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
-
-class WorkerSignals(QObject):
-    '''
-    Defines the signals available from a running worker thread.
-
-    Supported signals are:
-
-    finished
-        No data
-
-    error
-        tuple (exctype, value, traceback.format_exc() )
-
-    result
-        object data returned from processing, anything
-
-    progress
-        int indicating % progress
-
-    '''
-    finished = pyqtSignal()
-    error = pyqtSignal(tuple)
-    result = pyqtSignal(object)
-    progress = pyqtSignal(int)
-
-
-
-class Worker(QRunnable):
-
-    def __init__(self, CT, cpu_time, cpuString, labelCpu):
-        super().__init__()
-
-        self.ct = CT
-        self.creating_Percent = cpu_time
-        self.string_Percent = cpuString
-        self.labelCpu = labelCpu
-        self.signals = WorkerSignals()
-
-
-
-    @pyqtSlot()
-    def run_thread (self):
-
-        counter = 1
-
-        while counter == 1:
-            cpu_time = psutil.cpu_percent(interval=None)
-            cpuString = "".join(str(cpu_time))
-            labelCpu = QLabel(cpuString)
-
-        # Retrieve args/kwargs here; and fire processing using them
-        try:
-            result = self.ct(self.creating_Percent, self.string_Percent, self.labelCpu)
-        except:
-            traceback.print_exc()
-            exctype, value = sys.exc_info()[:2]
-            self.signals.error.emit((exctype, value, traceback.format_exc()))
-        else:
-            self.signals.result.emit(result)  # Return the result of the processing
-        finally:
-            self.signals.finished.emit()  # Done
 
 """
 This class will create what things will go into the app window
 """
 
+
 class Window(QMainWindow):
     # The method attaches the QMainWindow to the Window class
-    def __init__(self,CT, cpu_time, cpuString, labelCpu ):
-        super(Window, self).__init__(CT, cpu_time, cpuString, labelCpu)
-
-        self.ct = CT
-        self.creating_Percent = cpu_time
-        self.string_Percent = cpuString
-        self.labelCpu = labelCpu
-
+    def __init__(self):
+        super().__init__()
 
         # Setting the window title
         self.setWindowTitle("Andel Trading Bot")
@@ -109,7 +44,7 @@ class Window(QMainWindow):
         self.FileReading()
 
         # Calling the Creating Tabs method
-        self.Creating_Tabs(CT, cpu_time, cpuString, labelCpu)
+        self.Creating_Tabs()
 
         # Showing the GUI window
         self.show()
@@ -223,22 +158,23 @@ class Window(QMainWindow):
      This function will create tabs for the gui
     """
 
-    def Creating_Tabs(self, CT, cpu_time, cpuString,labelCpu):
-
-        self.ct = CT
-        self.creating_Percent = cpu_time
-        self.string_Percent = cpuString
-        self.labelCpu = labelCpu
-
+    def Creating_Tabs(self):
         # Initializing the self tabs to the QTabWidget
         self.tabs = QTabWidget()
 
         # Add the first tab to the tabs with the name and tab
-        self.tabs.addTab(InFirstTab(CT, cpu_time, cpuString, labelCpu), "Simulation")
+        self.tabs.addTab(InFirstTab(), "Simulation")
 
         # Add the tab widget to the set central widget, so it is below the menu bar
         self.setCentralWidget(self.tabs)
 
+
+class WhileThread(QThread):
+
+    signal = pyqtSignal(QLabel)
+
+    def __init__(self, parent=None):
+        super(WhileThread, self).__init__(parent)
 
 
 
@@ -252,41 +188,19 @@ far left side there will be
 
 
 class InFirstTab(QWidget):
-    def __init__(self, CT, cpu_time, cpuString, labelCpu):
-        super().__init__(CT, cpu_time, cpuString, labelCpu)
-
-        self.threadpool = QThreadPool()
-
+    def __init__(self):
+        super().__init__()
 
         # Calling the simulation method
         self.Simulation()
 
-    """
-       This function will run the cpu usage in a while loop so it can update it's self 
-       """
-
-    def Cpu_Usage(self):
-        while True:
-            cpu_time = psutil.cpu_percent(interval=1)
-            cpu_String = "".join(str(cpu_time))
-            self.cpuTime = QLabel("Cpu Usage is " + cpu_String + "%")
-            ches = self.Sim_Layout.addWidget(self.cpuTime)
-            return ches
-
-    def sleep(self):
-        time.sleep(1)
-
-    def thread_complete(self):
-        self.thread = QLabel("THREAD COMPLETE!")
+        #self.thread = WhileThread()
 
 
 
-    def oh_no(self):
-        # Pass the function to execute
-        worker = Worker(self.sleep())  # Any other args, kwargs are passed to the run function
-        worker.signals.finished.connect(self.thread_complete)
 
-        self.threadpool.start(worker)
+
+
 
     def RunCpuUsage(self):
 
@@ -296,6 +210,28 @@ class InFirstTab(QWidget):
 
             self.labelCpu = QLabel(cpuString)
 
+
+
+
+
+    """
+    This function will run the cpu usage in a while loop so it can update it's self 
+    """
+
+    def Cpu_Usage(self):
+        cpu_time = psutil.cpu_percent(interval=1, percpu=False)
+        for x in range(map(str(cpu_time))):
+
+
+        for rows in range(num_cores // NUM_COLS + 1):
+            # for cols in range(min(num_cores-rows*NUM_COLS, NUM_COLS)):
+            layout += [[GraphColumn('CPU ' + str(rows * NUM_COLS + cols), (rows, cols)) for cols in
+                        range(min(num_cores - rows * NUM_COLS, NUM_COLS))]]
+
+            cpu_time = psutil.cpu_percent(interval=1, percpu=False)
+            cpuString = "".join(str(cpu_time))
+            self.cpuTime = QLabel("Cpu Usage is " + cpuString + "%")
+            return self.cpuTime
 
     """
     This method will create the simulation information, and the portfolio information, which is the 
@@ -342,6 +278,10 @@ class InFirstTab(QWidget):
 
         # Adding the percentage label to the form layout
         self.Sim_Layout.addWidget(self.percentage)
+
+        while True:
+            self.Sim_Layout.addWidget(self.Cpu_Usage())
+
 
         # Adding the sim layout to the set layout, so it can be in the simulation tab
         self.setLayout(self.Sim_Layout)
