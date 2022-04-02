@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import sys
+import traceback
 import coinbase
 import configparser
 import pandas
@@ -8,6 +9,7 @@ import requests
 import os
 import time
 import psutil
+
 from threading import Timer
 
 from PyQt5.QtGui import *
@@ -169,13 +171,35 @@ class Window(QMainWindow):
         self.setCentralWidget(self.tabs)
 
 
-class WhileThread(QThread):
+class Worker(QRunnable):
+    cpu_time = psutil.cpu_percent(interval=None)
+    cpuString = "".join(str(cpu_time))
+    labelCpu = QLabel(cpuString)
 
-    signal = pyqtSignal(QLabel)
 
-    def __init__(self, parent=None):
-        super(WhileThread, self).__init__(parent)
+    def __init__(self, CT, cpu_time, cpuString, labelCpu):
+        super(Worker, self).__init__()
+        self.ct = CT
+        self.creating_Percent = cpu_time
+        self.string_Percent = cpuString
+        self.labelCpu = labelCpu
 
+
+    def run_thread (self):
+
+        self.ct(self.creating_Percent, self.string_Percent, self.labelCpu)
+
+        # Retrieve args/kwargs here; and fire processing using them
+        try:
+            result = self.ct(self.creating_Percent, self.string_Percent, self.labelCpu)
+        except:
+            traceback.print_exc()
+            exctype, value = sys.exc_info()[:2]
+            self.signals.error.emit((exctype, value, traceback.format_exc()))
+        else:
+            self.signals.result.emit(result)  # Return the result of the processing
+        finally:
+            self.signals.finished.emit()  # Done
 
 
 """
@@ -197,11 +221,6 @@ class InFirstTab(QWidget):
         #self.thread = WhileThread()
 
 
-
-
-
-
-
     def RunCpuUsage(self):
 
             cpu_time = psutil.cpu_percent(interval=None)
@@ -211,27 +230,21 @@ class InFirstTab(QWidget):
             self.labelCpu = QLabel(cpuString)
 
 
-
-
-
     """
     This function will run the cpu usage in a while loop so it can update it's self 
     """
 
     def Cpu_Usage(self):
-        cpu_time = psutil.cpu_percent(interval=1, percpu=False)
-        for x in range(map(str(cpu_time))):
+
+        while True:
+            cpu_time = psutil.cpu_percent(interval=1)
+            cpu_String = "".join(str(cpu_time))
+            self.cpuTime = QLabel("Cpu Usage is " + cpu_String + "%")
+            ches = self.Sim_Layout.addWidget(self.cpuTime)
+            return ches
 
 
-        for rows in range(num_cores // NUM_COLS + 1):
-            # for cols in range(min(num_cores-rows*NUM_COLS, NUM_COLS)):
-            layout += [[GraphColumn('CPU ' + str(rows * NUM_COLS + cols), (rows, cols)) for cols in
-                        range(min(num_cores - rows * NUM_COLS, NUM_COLS))]]
 
-            cpu_time = psutil.cpu_percent(interval=1, percpu=False)
-            cpuString = "".join(str(cpu_time))
-            self.cpuTime = QLabel("Cpu Usage is " + cpuString + "%")
-            return self.cpuTime
 
     """
     This method will create the simulation information, and the portfolio information, which is the 
@@ -239,6 +252,9 @@ class InFirstTab(QWidget):
     """
 
     def Simulation(self):
+
+        # Initiating the thread pool
+        self.threadpool = QThreadPool()
 
         # Creating the portfolio label
         self.portfolio = QLabel("Portfolio Information")
@@ -279,9 +295,8 @@ class InFirstTab(QWidget):
         # Adding the percentage label to the form layout
         self.Sim_Layout.addWidget(self.percentage)
 
-        while True:
-            self.Sim_Layout.addWidget(self.Cpu_Usage())
-
+        # Calling the cpu usage method
+        self.Cpu_Usage()
 
         # Adding the sim layout to the set layout, so it can be in the simulation tab
         self.setLayout(self.Sim_Layout)
