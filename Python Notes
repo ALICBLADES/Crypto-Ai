@@ -1,0 +1,7 @@
+Python Super() Function
+This function is used to arguments to a parent or sibling class
+and the super class returns the arguments that was from either from
+the sibling or the parent class
+
+__init__ Function
+All classes have this
