@@ -1,47 +1,61 @@
-import time
-from PySide6.QtWidgets import *
-from PySide6.QtGui import *
-from PySide6.QtCore import Signal, Slot, QObject
 import psutil
+from PySide2 import QtWidgets, QtCore
+from PySide2.QtCore import Signal
 
-"This class will create the Signal and slot in order to connect the method " \
-"cpu_Updating and to connect it with the class InFirstTab"
+class MainUiClass(QtWidgets.QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.progress = QtWidgets.QProgressBar()
+        self.button = QtWidgets.QPushButton('Test')
+        self.button.clicked.connect(self.handleButton)
+        layout = QtWidgets.QHBoxLayout(self)
+        layout.addWidget(self.progress)
+        layout.addWidget(self.button)
+        self.monitor = CpuMonitor()
+        self.monitor.cpuPercent.connect(self.progress.setValue)
+        self.monitor.start()
+        self.simulator = Simulator()
 
+    def handleButton(self):
+        if not self.simulator.isRunning():
+            self.simulator.start()
 
-class Communicate(QObject):
-    # Initializing the text update to the Signal that includes a string
-    textUpdate = Signal(str)
+    def closeEvent(self, event):
+        for thread in self.simulator, self.monitor:
+            thread.stop()
+            thread.quit()
+            thread.wait()
 
-    def __init__(self, CpuString):
-        super(Communicate, self).__init__()
-        # Setting up the CpuString
-        self.CpuString = CpuString
+class CpuMonitor(QtCore.QThread):
+    cpuPercent = Signal(int)
 
-    def exitProgram(self):
-        pass
+    def run(self):
+        self._stopped = False
+        while not self._stopped:
+            value = int(psutil.cpu_percent(interval=1))
+            self.cpuPercent.emit(value)
 
-    @Slot(str)
-    def cpu_Updating(self, CpuString):
-        # Getting the cpu percent
-        cpu_time = psutil.cpu_percent(interval=1)
-        # WHILE cpu time is not 0
-        while cpu_time != 0:
-            # Set the cpu time again so the while can still be active
-            cpu_time = psutil.cpu_percent(interval=1)
-            # Creating a list
-            cpu_List = list()
-            # Insert each cpu percent into the list
-            cpu_List.insert(0, cpu_time)
-            # For x in cpu list
-            for x in cpu_List:
-                # Turning the cpu percent into a str
-                CpuString = "Cpu usage is " + str(x) + " %"
-                # Returning the CpuString
-                return CpuString
+    def stop(self):
+        self._stopped = True
 
-    def update(self, CpuString):
-        # Setting up the CpuString
-        CpuString = ""
+class Simulator(QtCore.QThread):
+    def run(self):
+        self._stopped = False
+        random = QtCore.QRandomGenerator.system()
+        timer1 = QtCore.QDeadlineTimer(20000)
+        while not self._stopped and not timer1.hasExpired():
+            duration = random.bounded(400, 800)
+            self.msleep(duration)
+            timer2 = QtCore.QDeadlineTimer(duration)
+            while not self._stopped and not timer2.hasExpired():
+                pass
 
-        # Emitting the Signal to the Cpu Updating function
-        self.textUpdate.emit(Communicate.cpu_Updating(self, CpuString))
+    def stop(self):
+        self._stopped = True
+
+if __name__ == '__main__':
+
+    app = QtWidgets.QApplication(['CPU Monitor'])
+    a = MainUiClass()
+    a.show()
+    app.exec_()

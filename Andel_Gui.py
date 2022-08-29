@@ -1,20 +1,148 @@
+import time
+import threading
 import psutil
+import traceback
+import functools
+
+from PySide2.QtQml import QQmlApplicationEngine
+
 import File_Explorer_System_Gauge as FESG
+import multiprocessing
 import sys
 
-from PySide6.QtWidgets import *
-from PySide6.QtGui import *
-from PySide6.QtCore import *
+from PySide2.QtWidgets import *
+from PySide2.QtGui import *
+from PySide2.QtCore import Slot, Signal, QThread, QObject, QRunnable, QProcess, QThreadPool, QTimer
+
+
+class WorkerSignals(QObject):
+    '''
+    Defines the signals available from a running worker thread.
+
+    Supported signals are:
+
+    finished
+        No data
+
+    error
+        tuple (exctype, value, traceback.format_exc() )
+
+    result
+        object data returned from processing, anything
+
+    progress
+        int indicating % progress
+
+    '''
+    finished = Signal()
+    error = Signal(tuple)
+    result = Signal(object)
+    progress = Signal(int)
+    Returned = Signal(str)
+
+
+class Worker(QRunnable):
+    """
+    Worker thread
+
+    Inherits from QRunnable to handle worker thread setup, signals and wrap-up
+    :param callback: The function callback to run on this worker thread. Supplied args
+    and kwargs will be passed through to the runner.
+
+    :type callback: function
+    :param args: Arguments to pass to the callback function
+    :param kwargs: Keywords to pass to the callback function
+    """
+
+    def __init__(self, fn, *args, **kwargs):
+        super(Worker, self).__init__()
+
+        self.fn = fn
+        self.args = args
+        self.kwargs = kwargs
+        self.signals = WorkerSignals()
+
+        # Add the callback to our kwargs
+        self.kwargs["progress_callback"] = self.signals.progress
+
+    @Slot()
+    def run(self):
+        '''
+        Initialize the runner function with passed args, kwargs.
+        '''
+        try:
+            result = self.fn(*self.args, **self.kwargs)
+        except:
+            traceback.print_exc()
+            exctype, value = sys.exc_info()[:2]
+            self.signals.error.emit((exctype, value, traceback.format_exc()))
+        else:
+            self.signals.result.emit(result)
+        finally:
+            self.signals.finished.emit()
+
+
+class AnotherOne(QThread):
+    def __init__(self, *args, **kwargs):
+        super(AnotherOne, self).__init__()
+        self.signal = fuck()
+
+    def run(self):
+
+        while True:
+            self.signal.goddamn.emit(self.progress())
+            self.signal.fucks.emit(self.cpu_Updating())
+
+
+
+    @Slot(object)
+    def progress(self):
+        cpu_object = self.cpu_Updating()
+        while True:
+
+            self.label = QLabel()
+
+            self.label.setText(cpu_object + "l")
+
+            print(self.label.text())
+
+            return self.label
+
+    @Slot(str)
+    def cpu_Updating(self):
+
+        global cpu_time
+
+        while True:
+            cpu_time = psutil.cpu_percent(interval=1)
+
+            to_String = "Cpu Usage is " + str(cpu_time) + " %"
+
+            return to_String
+
+class Layout_thread(QThread):
+    def __init__(self):
+        super(Layout_thread, self).__init__()
+        self.signal = fuck()
+
+    def run(self):
+        while True:
+            self.signal.goddamn.emit(self.window.adding_Percents())
+
+
 
 """
 This class will create what things will go into the app window
 """
 
 
-class Window(QMainWindow):
+class Window(QMainWindow, AnotherOne, Layout_thread):
+    Sim_layout = None
     # The method attaches the QMainWindow to the Window class
-    def __init__(self, CpuString):
+    def __init__(self):
         super(Window, self).__init__()
+
+        bitch = Signal(object)
 
         # Setting the window title
         self.setWindowTitle("Andel Trading Bot")
@@ -29,10 +157,78 @@ class Window(QMainWindow):
 
         self.setCentralWidget(fileWidget)
 
-        self.Creating_Tabs(CpuString)
+        self.threadpool = QThreadPool()
+
+        # Creating the portfolio label
+        portfolio = QLabel("Portfolio Information")
+
+        # Setting the font and the size of the text of the portfolio text
+        portfolio.setFont(QFont("Arial", 10))
+
+        # Creating the net total label
+        graph_data = QLabel("Net Total:\nLoss:\nGains:\nPercentage")
+
+        # Creating the button
+        button = QPushButton()
+
+        # Setting the button's text
+        button.setText("Click me")
+
+        # Setting the size of the button
+        button.setFixedSize(50, 50)
+
+        self.checkbox = QCheckBox()
+
+        self.checkbox.connect(self.adding_Percents(), QFormLayout)
+
+        self.Sim_layout.addWidget(self.checkbox)
+
+        self.Sim_layout.addWidget(button)
+
+        self.cpu_thread = AnotherOne()
+
+        self.cpu_thread.start()
+
+        self.psutil_thread()
 
         # Showing the GUI window
         self.show()
+
+
+    def Checking(self):
+
+
+    @Slot(object)
+    def adding_Percents(self):
+        self.Sim_layout = QFormLayout(self)
+
+        self.Sim_frame = QFrame(self)
+
+        while True:
+            if self.Sim_layout.isEmpty():
+               self.Sim_layout.addWidget(AnotherOne.progress(self))
+               self.Sim_frame.setLayout(self.Sim_layout)
+               return self.setCentralWidget(self.Sim_frame)
+            elif self.Sim_layout.isEmpty() == False:
+               self.Sim_layout.removeWidget(AnotherOne.progress(self))
+               self.Sim_frame.setLayout(self.Sim_layout)
+               return self.setCentralWidget(self.Sim_frame)
+
+    def Label_Return(self):
+        self.cpu_label = QLabel()
+        return self.cpu_label.setText(AnotherOne.cpu_Updating(self))
+
+        # CREATE PSUTIL THREAD FUNCTION
+    def psutil_thread(self):
+            worker = Worker(self.adding_Percents)
+
+            # START WORKER
+            worker.signals.result.connect(self.print_output)
+            worker.signals.finished.connect(self.thread_complete)
+            worker.signals.progress.connect(self.progress)
+
+            # Execute
+            self.threadpool.start(worker)
 
     """
     This function will exit the file menu in the GUI
@@ -40,6 +236,32 @@ class Window(QMainWindow):
 
     def exitProgram(self):
         exit()
+
+    def doing(self):
+        cpu_object = AnotherOne.cpu_Updating(self)
+        cpu_threading = multiprocessing.Process(target=self.adding_Percents())
+        cpu_threading.start()
+
+    def execute_this_fn(self, progress_callback):
+        for n in range(0, 5):
+            time.sleep(1)
+            progress_callback.emit(n * 100 / 4)
+
+        return "Done."
+
+    def print_output(self, s):
+        print(s)
+
+    def thread_complete(self):
+        print("THREAD COMPLETE!")
+
+
+    def Locking_Threading(self):
+        lock = threading.Lock()
+        lock.acquire()
+        cpu_threading = threading.Thread(target=AnotherOne.cpu_Updating(self))
+        cpu_threading.start()
+
 
     def FileReading(self):
         # Calling the status bar
@@ -69,116 +291,29 @@ class Window(QMainWindow):
         # Creating the help menu and adds to the main menu with the name "Help"
         self.helpMenu = menubar.addMenu("Help")
 
-    """
-     This function will create tabs for the gui
-    """
+class FrameTab(QFrame):
+    def __init__(self, cpu_number):
+        super(FrameTab, self).__init__()
 
-    def Creating_Tabs(self, CpuString):
-        # Initializing the self tabs to the QTabWidget
+        self.call = Window.CallingFrame(self)
+
         self.tabs = QTabWidget()
 
-        # Add the first tab to the tabs with the name and tab
-        self.tabs.addTab(InFirstTab(CpuString), "Simulation")
+        self.tabs.setParent(FrameTab())
 
-        self.tabs.addTab(SettingWidget(), "Settings")
-
-        # Add the tab widget to the set central widget, so it is below the menu bar
-        self.setCentralWidget(self.tabs)
+        self.tabs.addTab(self.CallFrame(), "First Tab")
 
 
-"""
-A class for the first tab which is the simulation, this tab will have a graph on the right side, taking up
-most of the tab space on the middle to left side of the tab which will have the all the simulation 
-information, such as the portfolio information, current balance, hourly lost/gain etc. And there will 
-be a label that will tell the cpu usage on the bottom left hand side of the app gui. On the 
-far left side there will be  
-"""
+class fuck(QObject):
+    fucks = Signal(str)
+    goddamn = Signal(object)
+    damn = Signal(object)
+    def __init__(self):
+       super().__init__(None)
+       self.thread = QThread()
+       self.moveToThread(self.thread)
 
 
-class InFirstTab(QWidget):
-    def __init__(self, CpuString):
-        super().__init__()
-
-        # Setting up the CpuString
-        self.CpuString = CpuString
-
-        # Calling the simulation method
-        self.Simulation(CpuString)
-
-    """
-    This method will create the simulation information, and the portfolio information, which is the 
-    net total, Loss, gains and percentage 
-    """
-
-    def Simulation(self, CpuString):
-        # Creating the portfolio label
-        portfolio = QLabel("Portfolio Information")
-
-        # Creating the net total label
-        net_total = QLabel("Net Total:")
-
-        # Creating the loss label
-        Loss = QLabel("Loss:")
-
-        # Creating the Gain label
-        Gain = QLabel("Gains:")
-
-        # Creating the percentage label
-        percentage = QLabel("Percentage:")
-
-        # Setting the font and the size of the text of the portfolio text
-        portfolio.setFont(QFont("Arial", 10))
-
-        # Setting the font and the size of the text of the net total text
-        net_total.setFont(QFont("Arial", 10))
-
-        # Creating the QFormlayout on the simulation tab
-        Sim_Layout = QFormLayout()
-
-        # Adding the portfolio label to the form layout
-        Sim_Layout.addWidget(portfolio)
-
-        # Adding the net total label to the form layout
-        Sim_Layout.addWidget(net_total)
-
-        # Adding the Loss label to the form layout
-        Sim_Layout.addWidget(Loss)
-
-        # Adding the gains label to the form layout
-        Sim_Layout.addWidget(Gain)
-
-        label = QLabel
-
-        con = InFirstTab.Continuing_Cpu_Update(self, label)
-
-        Sim_Layout.addWidget(con)
-
-        # Adding the percentage label to the form layout
-        Sim_Layout.addWidget(percentage)
-
-        # Adding the sim layout to the set layout, so it can be in the simulation tab
-        self.setLayout(Sim_Layout)
-
-    def Continuing_Cpu_Update (self, CpuString):
-
-        self.sim_Form = InFirstTab.Simulation(self, CpuString)
-
-        theCommunicate = FESG.Communicate(CpuString)
-
-        self.fuck = FESG.Communicate.textUpdate
-
-        theCommunicate.update(CpuString)
-
-        while True:
-           # Creating QLabel
-            CpuLabel = QLabel()
-
-            cpuMethod = theCommunicate.cpu_Updating(CpuString)
-
-           # Setting the text to be the cpu percent as a str
-            CpuLabel.setText(cpuMethod)
-
-            return CpuLabel
 
 class SettingWidget(QWidget):
     def __init__(self):
@@ -202,9 +337,6 @@ class SettingWidget(QWidget):
         # Creating the checkbox widget
         self.checkBox = QCheckBox()
 
-        # Creating the button widget
-        self.button = QPushButton()
-
         # Adding the check label to the layout
         self.layout.addWidget(self.checkLabel)
 
@@ -215,10 +347,10 @@ class SettingWidget(QWidget):
         self.setLayout(self.layout)
 
 
-app = QApplication()
+app = QApplication([])
 
-CpuString = ""
+window = Window()
 
-window = Window(CpuString)
+window.show()
 
-app.exec()
+app.exec_()
