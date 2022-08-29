@@ -191,12 +191,19 @@ class Window(QMainWindow, AnotherOne, Layout_thread):
 
         self.psutil_thread()
 
+        self.Checking()
+
         # Showing the GUI window
         self.show()
 
 
     def Checking(self):
-
+        if self.checkbox.isChecked():
+           self.checkbox.connect(self.adding_Percents(), QFormLayout)
+        self.upate_timer = QTimer(self)
+        self.upate_timer.setInterval(100)  # milliseconds i believe
+        self.upate_timer.setSingleShot(False)
+        self.upate_timer.timeout.connect(self.adding_Percents())
 
     @Slot(object)
     def adding_Percents(self):
